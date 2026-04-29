@@ -1,0 +1,67 @@
+# ============================================================================
+#  SdrTaskApi — Unit Test Container  (CentOS Stream 10)
+#
+#  Builds and runs test_types and test_message_codec.
+#  No SoapySDR, no AMQP, no database required.
+#
+#  Build (from SdrTaskApi/ directory):
+#    podman build -f Containerfile.test -t sdr-task-api:test .
+#
+#  Run (exits 0 on pass):
+#    podman run --rm sdr-task-api:test
+#
+#  Verbose:
+#    podman run --rm sdr-task-api:test ctest --output-on-failure -V
+# ============================================================================
+
+FROM quay.io/centos/centos:stream10
+
+LABEL maintainer="SDR RF Systems"
+LABEL description="SdrTaskApi — CentOS Stream 10 unit test image"
+
+ENV HOME=/root
+WORKDIR /root
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 1 — Enable EPEL + CRB, install build tools
+# ─────────────────────────────────────────────────────────────────────────────
+RUN dnf install -y epel-release && \
+    dnf config-manager --enable crb && \
+    dnf update -y && \
+    dnf install -y \
+        gcc gcc-c++ make cmake ninja-build pkg-config \
+        git ca-certificates \
+        fmt-devel \
+    && dnf clean all
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 2 — Build spdlog 1.13.0 from source (with external fmt)
+# ─────────────────────────────────────────────────────────────────────────────
+RUN git clone --depth 1 --branch v1.13.0 \
+        https://github.com/gabime/spdlog.git /tmp/spdlog && \
+    cmake -S /tmp/spdlog -B /tmp/spdlog/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DSPDLOG_FMT_EXTERNAL=ON \
+        -DSPDLOG_BUILD_SHARED=OFF && \
+    cmake --build /tmp/spdlog/build --parallel "$(nproc)" --target spdlog && \
+    cmake --install /tmp/spdlog/build && \
+    rm -rf /tmp/spdlog
+
+RUN echo /usr/local/lib64 > /etc/ld.so.conf.d/local.conf && ldconfig
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  STEP 3 — Copy source and build
+#  nlohmann/json and GTest are fetched from GitHub during cmake configure.
+# ─────────────────────────────────────────────────────────────────────────────
+COPY . /build/SdrTaskApi
+
+RUN cmake -S /build/SdrTaskApi -B /build/SdrTaskApi/build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_PREFIX_PATH=/usr/local \
+    && cmake --build /build/SdrTaskApi/build --parallel "$(nproc)"
+
+ENV LD_LIBRARY_PATH="/usr/local/lib64:/usr/local/lib"
+WORKDIR /build/SdrTaskApi/build
+
+CMD ["ctest", "--output-on-failure", "-V"]
