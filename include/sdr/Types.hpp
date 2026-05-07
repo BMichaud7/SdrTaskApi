@@ -88,6 +88,8 @@ inline bool isTerminalState(TaskState s) {
     return s==TaskState::COMPLETED || s==TaskState::FAILED || s==TaskState::CANCELLED;
 }
 
+inline constexpr const char* PREEMPT_TERMINAL_REASON = "PREEMPTED_BY_HIGHER_RANK";
+
 // ─── reject codes ────────────────────────────────────────────────────────
 enum class RejectCode : uint8_t {
     NONE, INVALID_REQUEST, INVALID_TASK_TYPE, INVALID_SCHEDULE,
@@ -322,6 +324,11 @@ struct TaskRecord {
     std::vector<StreamMetrics>            stream_metrics;
     std::string                           terminal_reason;
 };
+
+inline bool isPreempted(const TaskRecord& r) {
+    return r.state == TaskState::CANCELLED &&
+           r.terminal_reason.find(PREEMPT_TERMINAL_REASON) != std::string::npos;
+}
 
 // ─── callbacks ───────────────────────────────────────────────────────────
 using TaskStateChangedCb = std::function<void(const TaskRecord&)>;

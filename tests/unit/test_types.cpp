@@ -254,3 +254,41 @@ TEST(Types, IqFlagsAreSingleBitsAndMutuallyDistinct) {
 TEST(Types, SchemaVersionString) {
     EXPECT_STREQ(SCHEMA_VERSION, "2.0");
 }
+
+// ── PREEMPT_TERMINAL_REASON and isPreempted ───────────────────────────────────
+
+TEST(Types, PreemptTerminalReasonIsNotEmpty) {
+    EXPECT_FALSE(std::string(PREEMPT_TERMINAL_REASON).empty());
+}
+
+TEST(Types, PreemptTerminalReasonContainsExpectedText) {
+    EXPECT_NE(std::string(PREEMPT_TERMINAL_REASON).find("PREEMPTED"), std::string::npos);
+}
+
+TEST(Types, IsPreemptedReturnsTrueForCancelledWithPreemptReason) {
+    TaskRecord rec;
+    rec.state = TaskState::CANCELLED;
+    rec.terminal_reason = std::string(PREEMPT_TERMINAL_REASON) + " rank=5 request=req-1";
+    EXPECT_TRUE(isPreempted(rec));
+}
+
+TEST(Types, IsPreemptedReturnsFalseForOtherCancelledReason) {
+    TaskRecord rec;
+    rec.state = TaskState::CANCELLED;
+    rec.terminal_reason = "user requested stop";
+    EXPECT_FALSE(isPreempted(rec));
+}
+
+TEST(Types, IsPreemptedReturnsFalseForNonCancelledState) {
+    TaskRecord rec;
+    rec.state = TaskState::RUNNING;
+    rec.terminal_reason = PREEMPT_TERMINAL_REASON;
+    EXPECT_FALSE(isPreempted(rec));
+}
+
+TEST(Types, IsPreemptedReturnsFalseForEmptyTerminalReason) {
+    TaskRecord rec;
+    rec.state = TaskState::CANCELLED;
+    rec.terminal_reason = "";
+    EXPECT_FALSE(isPreempted(rec));
+}
