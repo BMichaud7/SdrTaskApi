@@ -51,29 +51,68 @@ if (isPreempted(record)) {
 | `new.rank > existing.rank` | Existing task(s) on the target device are cancelled, new task accepted |
 | `rank` field absent in JSON | Decoder rejects the message (`nullopt`) |
 
+## Dependencies
+
+This library has minimal external dependencies. CMake resolves each automatically if not already installed.
+
+| Library | Required | Resolution |
+|---------|----------|------------|
+| nlohmann/json ≥ 3.11 | YES | System package or auto-fetched via FetchContent |
+| spdlog ≥ 1.13 | YES | System package, pkg-config, or auto-fetched via FetchContent |
+| googletest 1.14 | Tests only | System package or auto-fetched via FetchContent |
+
+**Install system packages (Ubuntu/Debian):**
+```bash
+sudo apt-get install -y nlohmann-json3-dev libspdlog-dev libfmt-dev
+```
+
+**Install system packages (CentOS/RHEL):**
+```bash
+sudo dnf install -y fmt-devel
+# spdlog must be built from source on CentOS 10 — see Containerfile.test for exact steps
+```
+
+If packages are missing, CMake will print a `FATAL_ERROR` with the exact install command.
+
 ## Building
 
 SdrTaskApi is a static library consumed via CMake `add_subdirectory`. It is not built standalone in production — it is always a dependency of `SdrResourceManager` and `AcquisitionApp`.
 
-For unit tests only:
+**As a dependency (recommended):** Place this repo as a sibling of the consumer repo. The consumer's `CMakeLists.txt` detects it automatically:
+
+```
+parent/
+├── SdrTaskApi/       ← this repo
+├── SdrResourceManager/
+└── AcquisitionApp/
+```
+
+**For unit tests only (container — no setup needed):**
 
 ```bash
-# Ubuntu 24.04
 podman build -f Containerfile.test -t sdr-task-api:test .
-podman run --rm sdr-task-api:test          # exits 0 on pass
-podman run --rm sdr-task-api:test ctest --output-on-failure -V
+podman run --rm sdr-task-api:test                              # exits 0 on pass
+podman run --rm sdr-task-api:test ctest --output-on-failure -V # verbose
+```
+
+**Native build (tests only):**
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel $(nproc)
+ctest --test-dir build --output-on-failure
 ```
 
 Tests cover 63 cases: type conversions, rank field defaults, `isPreempted`, `PREEMPT_TERMINAL_REASON`, message codec encode/decode for all `msg_type` values, and required-rank enforcement.
 
-## Dependencies
+## Inter-repo dependencies
 
-| Library | Purpose |
-|---------|---------|
-| nlohmann/json ≥ 3.11 | JSON encode/decode |
-| spdlog ≥ 1.13 | Warning logging in decoder |
+| Repo | Uses SdrTaskApi | How |
+|------|-----------------|-----|
+| [SdrResourceManager](https://github.com/BMichaud7/SdrResourceManager) | YES | `add_subdirectory(../SdrTaskApi)` or installed package |
+| [AcquisitionApp](https://github.com/BMichaud7/AcquisitionApp) | YES | `add_subdirectory(../SdrTaskApi)` or installed package |
 
-Both are fetched automatically via CMake `FetchContent` if not found on the system.
+Both consumer repos expect SdrTaskApi as a sibling directory. Clone all three repos under the same parent folder.
 
 ## Repository
 
