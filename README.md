@@ -95,7 +95,17 @@ podman run --rm sdr-task-api:test                              # exits 0 on pass
 podman run --rm sdr-task-api:test ctest --output-on-failure -V # verbose
 ```
 
-**Native build (tests only):**
+**Native build (using the included build script):**
+
+```bash
+./build.sh           # Release build
+./build.sh --tests   # Release build + run unit tests
+./build.sh --debug   # Debug build (AddressSanitizer + UBSan)
+./build.sh --clean --tests  # Clean rebuild + tests
+./build.sh --help    # All options
+```
+
+Or directly with CMake:
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
