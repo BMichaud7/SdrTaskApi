@@ -26,6 +26,19 @@ Decoded from incoming AMQP JSON. All task-creation messages **must** include a `
 | `rank` | int | **Required.** Preemption tier (0 = lowest). Higher rank preempts lower when spectrum is needed. |
 | `rf` | `RfRequest` | Center freq, BW, SR, channel counts, preferred device, coherency group |
 
+### `AssignedStream`
+
+Returned inside `TaskResponse.streams` and repeated in `TASK_STATUS` events.
+
+| Field | Description |
+|-------|-------------|
+| `center_freq_hz` | Device LO frequency (may change if a combined-window retune occurs) |
+| `slice_offset_hz` | Offset of this task's slice center from the device LO (`slice_center - device_cf`). Non-zero for sub-band tasks. **Can change mid-stream** when a combined-window retune expands the RF window — listen for `TASK_STATUS` updates and `IQ_FLAG_DWELL_CHANGE` packets. |
+| `slice_bw_hz` | Bandwidth of this task's slice within the wideband capture |
+| `sample_rate_sps` | Device sample rate (may increase after a combined-window retune) |
+
+To recover the assigned sub-band from the wideband IQ stream: mix by `-slice_offset_hz`, then low-pass filter to `slice_bw_hz`.
+
 ### `TaskRecord`
 
 Internal task state tracked by `ResourceManager`.  The `rank` field is propagated from the originating `TaskRequest`.
