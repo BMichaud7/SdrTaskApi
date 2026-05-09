@@ -36,11 +36,7 @@ std::optional<TaskRequest> MessageCodec::decode(const std::string& body) {
 
         req.task_type = taskTypeFromString(j.value("task_type","UNKNOWN"));
         req.priority  = j.value("priority",0);
-        if (!j.contains("rank")) {
-            spdlog::warn("MessageCodec: missing required field 'rank' in {}", req.msg_type);
-            return {};
-        }
-        req.rank = j.at("rank").get<int>();
+        req.rank = j.value("rank", 0);
 
         // Schedule
         if (j.contains("schedule")) {
