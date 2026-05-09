@@ -14,7 +14,7 @@ Shared C++ library defining the AMQP message schema, type system, and JSON codec
 
 ### `TaskRequest`
 
-Decoded from incoming AMQP JSON. All task-creation messages **must** include a `rank` field — the decoder returns `nullopt` if it is absent.
+Decoded from incoming AMQP JSON. All task-creation messages may include a `rank` field. If absent the decoder defaults to `0` (lowest priority).
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -23,7 +23,7 @@ Decoded from incoming AMQP JSON. All task-creation messages **must** include a `
 | `task_type` | `TaskType` | `DF`, `NARROWBAND`, `WIDEBAND`, `SCAN`, `SNAPSHOT`, `TRIGGERED`, `CALIBRATION` |
 | `schedule_mode` | `ScheduleMode` | `SCHEDULED`, `IMMEDIATE`, `CONTINUOUS` |
 | `priority` | int | Advisory scheduling weight |
-| `rank` | int | **Required.** Preemption tier (0 = lowest). Higher rank preempts lower when spectrum is needed. |
+| `rank` | int | Preemption tier (0 = lowest, default when absent). Higher rank preempts lower when spectrum is needed. |
 | `rf` | `RfRequest` | Center freq, BW, SR, channel counts, preferred device, coherency group |
 
 ### `AssignedStream`
@@ -62,7 +62,7 @@ if (isPreempted(record)) {
 | `new.rank == 0` | Never preempts anything |
 | `new.rank <= existing.rank` | Rejected normally (no preemption) |
 | `new.rank > existing.rank` | Existing task(s) on the target device are cancelled, new task accepted |
-| `rank` field absent in JSON | Decoder rejects the message (`nullopt`) |
+| `rank` field absent in JSON | Defaults to `0` (lowest priority, accepted) |
 
 ## Dependencies
 
@@ -103,9 +103,7 @@ parent/
 **For unit tests only (container — no setup needed):**
 
 ```bash
-podman build -f Containerfile.test -t sdr-task-api:test .
-podman run --rm sdr-task-api:test                              # exits 0 on pass
-podman run --rm sdr-task-api:test ctest --output-on-failure -V # verbose
+podman build --target test -t sdr-task-api:test .
 ```
 
 **Native build (using the included build script):**
@@ -126,7 +124,7 @@ cmake --build build --parallel $(nproc)
 ctest --test-dir build --output-on-failure
 ```
 
-Tests cover 63 cases: type conversions, rank field defaults, `isPreempted`, `PREEMPT_TERMINAL_REASON`, message codec encode/decode for all `msg_type` values, and required-rank enforcement.
+Tests cover 63 cases: type conversions, rank field defaults (absent rank → 0), `isPreempted`, `PREEMPT_TERMINAL_REASON`, message codec encode/decode for all `msg_type` values.
 
 ## Inter-repo dependencies
 
