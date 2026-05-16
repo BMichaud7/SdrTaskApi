@@ -30,6 +30,16 @@ public:
         const std::vector<DevHealthEntry>& devs,
         int tot_dev,int on_dev,int sched,int pend,int run,
         int tot_tasks,int ports_used,int ports_free,int64_t uptime_sec);
+
+    // DEVICE_TEMP_RESPONSE
+    struct TempSensor  { std::string name; double value_c; bool valid; };
+    struct TempEntry   {
+        std::string            device_id;
+        bool                   online = false;
+        std::vector<TempSensor> sensors;
+    };
+    static std::string encodeTempResponse(const std::string& req_id,
+                                          const std::vector<TempEntry>& devs);
 };
 
 } // namespace sdr

@@ -32,7 +32,8 @@ std::optional<TaskRequest> MessageCodec::decode(const std::string& body) {
             req.reason  = j.value("reason","");
             return req;
         }
-        if (req.msg_type=="HEALTH_QUERY") return req;
+        if (req.msg_type=="HEALTH_QUERY")      return req;
+        if (req.msg_type=="DEVICE_TEMP_QUERY") return req;
 
         req.task_type = taskTypeFromString(j.value("task_type","UNKNOWN"));
         req.priority  = j.value("priority",0);
@@ -91,7 +92,8 @@ std::optional<TaskRequest> MessageCodec::decode(const std::string& body) {
             req.rf.sample_rate_sps =r.value("sample_rate_sps",0.0);
             req.rf.rx_count        =r.value("rx_count",1);
             req.rf.tx_count        =r.value("tx_count",0);
-            req.rf.preferred_device=r.value("preferred_device","");
+            req.rf.preferred_channel=r.value("preferred_channel",-1);
+            req.rf.preferred_device =r.value("preferred_device","");
             req.rf.coherency_group  =r.value("coherency_group","");
             if (r.contains("rx_gain_db")) for (auto& v:r["rx_gain_db"]) req.rf.rx_gain_db.push_back(v.get<double>());
             if (r.contains("rx_agc"))     for (auto& v:r["rx_agc"])     req.rf.rx_agc.push_back(v.get<bool>());
@@ -269,6 +271,28 @@ std::string MessageCodec::encodeHealthQueryResponse(const std::string& req_id,
     return json{{"msg_type","HEALTH_QUERY_RESPONSE"},{"schema_version",SCHEMA_VERSION},
                 {"timestamp_ms",nowMs()},{"request_id",req_id},
                 {"controller",ctrl},{"devices",devh["devices"]}}.dump();
+}
+
+std::string MessageCodec::encodeTempResponse(const std::string& req_id,
+                                              const std::vector<TempEntry>& devs)
+{
+    json arr = json::array();
+    for (auto& d : devs) {
+        json sensors = json::array();
+        for (auto& s : d.sensors) {
+            if (s.valid)
+                sensors.push_back({{"name", s.name}, {"value_c", s.value_c}});
+            else
+                sensors.push_back({{"name", s.name}, {"value_c", nullptr}});
+        }
+        arr.push_back({{"device_id", d.device_id}, {"online", d.online},
+                       {"sensors", sensors}});
+    }
+    return json{{"msg_type", "DEVICE_TEMP_RESPONSE"},
+                {"schema_version", SCHEMA_VERSION},
+                {"request_id", req_id},
+                {"timestamp_ms", nowMs()},
+                {"devices", arr}}.dump();
 }
 
 } // namespace sdr

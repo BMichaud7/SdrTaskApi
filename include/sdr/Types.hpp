@@ -182,11 +182,16 @@ struct CalibrationParams {
 
 // ─── RF request ──────────────────────────────────────────────────────────
 struct RfRequest {
-    double              center_freq_hz   = 0.0;
-    double              bandwidth_hz     = 0.0;
-    double              sample_rate_sps  = 0.0;
-    int                 rx_count         = 0;
-    int                 tx_count         = 0;
+    double              center_freq_hz    = 0.0;
+    double              bandwidth_hz      = 0.0;
+    double              sample_rate_sps   = 0.0;
+    int                 rx_count          = 0;
+    int                 tx_count          = 0;
+    // -1 = any available channel (scheduler picks); ≥0 = require this specific
+    // physical channel. If the channel is occupied at the same CF, the scheduler
+    // subscribes to the existing stream (fan-out or DDC). If occupied at a
+    // different CF, tryRetuneCombined widens that channel to cover both tasks.
+    int                 preferred_channel = -1;
     std::vector<double> rx_gain_db;
     std::vector<bool>   rx_agc;
     std::vector<double> tx_atten_db;
@@ -307,10 +312,11 @@ struct TaskRecord {
         std::vector<int> rx_channels;
         std::vector<int> tx_channels;
         std::vector<int> udp_ports;
-        double           center_freq_hz  = 0.0;
-        double           sample_rate_sps = 0.0;
-        double           slice_lo_hz     = 0.0;
-        double           slice_hi_hz     = 0.0;
+        double           center_freq_hz       = 0.0;
+        double           sample_rate_sps      = 0.0; // device (wideband) rate
+        double           output_sample_rate_sps = 0.0; // after DDC; 0 = same as device rate
+        double           slice_lo_hz          = 0.0;
+        double           slice_hi_hz          = 0.0;
     };
     std::vector<DeviceAllocation> allocations;
 
