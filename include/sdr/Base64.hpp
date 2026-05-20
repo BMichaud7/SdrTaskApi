@@ -1,15 +1,35 @@
 #pragma once
-// Header-only base64 encode / decode (RFC 4648, no line breaks).
-// Intended for binary IQ snapshots embedded in JSON messages.
-// encode: arbitrary bytes  → ASCII string (ceil(n/3)*4 chars)
-// decode: ASCII string     → raw bytes   (any padding / whitespace tolerated)
+/**
+ * @file Base64.hpp
+ * @brief Header-only RFC 4648 base64 encode/decode (no line breaks).
+ *
+ * Intended for embedding binary IQ snapshots inside JSON AMQP messages.
+ *
+ * **Encoding**: arbitrary bytes → ASCII string (⌈n/3⌉ × 4 characters).
+ * **Decoding**: ASCII string → raw bytes (padding and whitespace tolerated).
+ *
+ * Typical usage in AcquisitionApp (encode):
+ * @code
+ * #include <sdr/Base64.hpp>
+ * std::string b64 = sdr::base64::encode(snapshot.data(),
+ *                                       snapshot.size() * sizeof(float));
+ * @endcode
+ *
+ * Typical usage in AnalysisApp (decode):
+ * @code
+ * std::vector<float> iq = sdr::base64::decodeFloats(msg["iq_snapshot_b64"]);
+ * @endcode
+ */
 #include <cstring>
 #include <string>
 #include <vector>
 #include <cstdint>
 
+/// @namespace sdr::base64
+/// @brief RFC 4648 base64 encode/decode utilities.
 namespace sdr::base64 {
 
+/// @cond INTERNAL
 namespace detail {
 inline constexpr char kEnc[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -23,8 +43,14 @@ inline int decval(char c) noexcept {
     return -1;  // padding ('=') or whitespace
 }
 } // namespace detail
+/// @endcond
 
-// Encode [data, data+len) to base64 string.
+/**
+ * @brief Encode a binary buffer to a base64 string.
+ * @param data Pointer to the first byte to encode.
+ * @param len  Number of bytes to encode.
+ * @return Base64-encoded ASCII string (no newlines, standard alphabet).
+ */
 inline std::string encode(const void* data, size_t len)
 {
     const auto* src = static_cast<const uint8_t*>(data);
@@ -42,7 +68,11 @@ inline std::string encode(const void* data, size_t len)
     return out;
 }
 
-// Decode base64 string to raw bytes.
+/**
+ * @brief Decode a base64 string to raw bytes.
+ * @param b64 Base64-encoded string (padding and whitespace tolerated).
+ * @return Decoded bytes.
+ */
 inline std::vector<uint8_t> decode(const std::string& b64)
 {
     std::vector<uint8_t> out;
@@ -62,9 +92,16 @@ inline std::vector<uint8_t> decode(const std::string& b64)
     return out;
 }
 
-// Decode a base64 string into a vector<float>.
-// The bytes are interpreted as little-endian IEEE 754 float32
-// (i.e. the same format produced by encode(floats.data(), floats.size()*4)).
+/**
+ * @brief Decode a base64 string into a vector of float32 values.
+ *
+ * The bytes are interpreted as little-endian IEEE 754 float32 —
+ * the same format produced by `encode(floats.data(), floats.size() * 4)`.
+ * Used to recover CF32 IQ snapshots from RF_DETECTION messages.
+ *
+ * @param b64 Base64-encoded string of raw float32 bytes.
+ * @return Decoded float32 values (interleaved I,Q,I,Q,… for CF32 IQ data).
+ */
 inline std::vector<float> decodeFloats(const std::string& b64)
 {
     auto bytes = decode(b64);
