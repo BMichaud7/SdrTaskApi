@@ -41,6 +41,7 @@ if(NOT spdlog_FOUND)
             GIT_SHALLOW    TRUE
             EXCLUDE_FROM_ALL)
         FetchContent_MakeAvailable(spdlog)
+        set(_SPDLOG_USE_EXTERNAL_FMT FALSE)
     endif()
 else()
     message(STATUS "spdlog found via cmake: ${spdlog_VERSION}")
@@ -61,10 +62,14 @@ target_link_libraries(sdr_task_api PUBLIC
 
 target_compile_features(sdr_task_api PUBLIC cxx_std_20)
 
-target_compile_definitions(sdr_task_api PRIVATE
-    SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG
-    SPDLOG_FMT_EXTERNAL
-)
+# SPDLOG_FMT_EXTERNAL: only when using system/pkg-config spdlog which requires
+# external fmt. When spdlog is fetched it ships bundled fmt — adding
+# SPDLOG_FMT_EXTERNAL there would require linking system libfmt explicitly.
+set(_spdlog_ext_fmt_defs SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG)
+if(NOT DEFINED _SPDLOG_USE_EXTERNAL_FMT OR _SPDLOG_USE_EXTERNAL_FMT)
+    list(APPEND _spdlog_ext_fmt_defs SPDLOG_FMT_EXTERNAL)
+endif()
+target_compile_definitions(sdr_task_api PRIVATE ${_spdlog_ext_fmt_defs})
 
 # ── Tests (only when this is the top-level project) ───────────────────────────
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
