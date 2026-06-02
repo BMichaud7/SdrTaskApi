@@ -19,7 +19,8 @@ jobs:
           sudo apt-get install -y \
             cmake ninja-build pkg-config \
             libqpid-proton-cpp12-dev \
-            nlohmann-json3-dev
+            nlohmann-json3-dev \
+            libfmt-dev
 
       - name: Configure
         run: cmake -B build -S . -G Ninja -DCMAKE_BUILD_TYPE=Release
