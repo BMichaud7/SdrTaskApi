@@ -1,4 +1,14 @@
 #!/usr/bin/env bash
+# ========================================================================
+# Project: OpenRFStack
+# Author:  Brendan Michaud
+# Year:    2026
+# Part of OpenRFStack (https://github.com/OpenRFStack)
+#
+# Licensed under the Personal Use License.
+# Do not use for commercial, organizational, or military purposes.
+# ========================================================================
+
 # build.sh — configure and build SdrTaskApi
 #
 # SdrTaskApi has no sibling-repo dependencies of its own; this script just
