@@ -124,3 +124,11 @@ inline std::vector<float> decodeFloats(const std::string& b64)
 }
 
 } // namespace sdr::base64
+
+/*
+========================================================================
+End of file — OpenRFStack
+Subject to Personal Use License
+https://github.com/OpenRFStack
+========================================================================
+*/

@@ -510,3 +510,11 @@ TEST(MessageCodec, EncodeSnapshotResultFailure) {
     EXPECT_EQ(j["error_msg"], "device offline");
     EXPECT_TRUE(j["power_bins"].empty());
 }
+
+/*
+========================================================================
+End of file — OpenRFStack
+Subject to Personal Use License
+https://github.com/OpenRFStack
+========================================================================
+*/
