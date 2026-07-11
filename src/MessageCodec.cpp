@@ -106,6 +106,7 @@ std::optional<TaskRequest> MessageCodec::decode(const std::string& body) {
             req.rf.tx_count        =r.value("tx_count",0);
             req.rf.preferred_channel=r.value("preferred_channel",-1);
             req.rf.preferred_device =r.value("preferred_device","");
+            req.rf.required_device  =r.value("required_device","");
             req.rf.coherency_group  =r.value("coherency_group","");
             if (r.contains("rx_gain_db")) for (auto& v:r["rx_gain_db"]) req.rf.rx_gain_db.push_back(v.get<double>());
             if (r.contains("rx_agc"))     for (auto& v:r["rx_agc"])     req.rf.rx_agc.push_back(v.get<bool>());

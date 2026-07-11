@@ -309,6 +309,9 @@ struct RfRequest {
     std::vector<bool>   rx_agc;           ///< Per-channel AGC enable. Empty = disabled.
     std::vector<double> tx_atten_db;      ///< Per-channel TX attenuation (dB).
     std::string         preferred_device; ///< Device ID hint; empty = best fit.
+    std::string         required_device;  ///< Hard device requirement; empty = no constraint.
+                                          ///< When set, the scheduler rejects rather than
+                                          ///< falling back to another device.
     std::string         coherency_group;  ///< Required coherency group; empty = any.
 };
 
